@@ -165,6 +165,20 @@ Add a line to refresh every 10 minutes:
 */10 * * * * bash /path/to/update-wallpaper.sh
 ```
 
+Cron runs without access to the graphical environment (`$DISPLAY`, `$DBUS_SESSION_BUS_ADDRESS`). The `update-wallpaper.sh` script exports these variables automatically, so no extra cron configuration is needed.
+
+If the wallpaper is not being set, check that the UID in `DBUS_SESSION_BUS_ADDRESS` matches your user. The default is `1000` (the first user on Ubuntu). To verify:
+
+```bash
+id -u
+```
+
+If the output differs from `1000`, update the path in `update-wallpaper.sh`:
+
+```bash
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/YOUR_UID/bus
+```
+
 ## Requirements
 
 - Python 3.8+
