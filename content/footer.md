@@ -1,1 +1,1 @@
-Edit content/ columns → run script
+[Edit](dim) content/ columns [→](green) run script

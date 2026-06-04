@@ -18,22 +18,13 @@ except ImportError:
     subprocess.run([sys.executable, "-m", "pip", "install", "pillow"], check=True)
     from PIL import Image, ImageDraw, ImageFont
 
-# ══════════════════════════════════════════════
-#  SETTINGS — adjust to your preferences
-# ══════════════════════════════════════════════
-WIDTH       = 1920
-HEIGHT      = 1080
-OUTPUT_PNG  = Path.home() / ".config" / "desk-os-wallpaper.png"
-CONTENT_DIR = Path(__file__).parent / "content"
-
-# Colors
-BG          = (8, 8, 8)
-COL_COLORS  = [(0,255,136), (0,207,255), (255,107,107), (255,204,0), (200,130,255)]
-TEXT_BRIGHT = (238, 238, 238)
-TEXT_MAIN   = (187, 187, 187)
-TEXT_MUTED  = (85, 85, 85)
-TEXT_DIM    = (51, 51, 51)
-BORDER      = (26, 26, 26)
+from settings import (
+    WIDTH, HEIGHT, OUTPUT_PNG, CONTENT_DIR,
+    MAX_COLUMNS,
+    TOPBAR_H, FOOTER_H, COL_PADDING,
+    FONT_SIZE_NORMAL, FONT_SIZE_SMALL, FONT_SIZE_TINY,
+    BG, COL_COLORS, TEXT_BRIGHT, TEXT_MAIN, TEXT_MUTED, TEXT_DIM, BORDER,
+)
 
 # ══════════════════════════════════════════════
 #  FONTS — look for JetBrains Mono or fallback
@@ -78,15 +69,63 @@ def is_bold_segment(text):
     return bool(re.search(r'\*\*.*?\*\*', text))
 
 # ══════════════════════════════════════════════
+#  COLORED TEXT RENDERER
+#  Syntax: [text](color)  where color is a name
+#  (green/cyan/red/yellow/purple/bright/main/muted/dim)
+#  or a hex value (#rrggbb)
+# ══════════════════════════════════════════════
+_NAMED_COLORS = {
+    'green':  COL_COLORS[0],
+    'cyan':   COL_COLORS[1],
+    'red':    COL_COLORS[2],
+    'yellow': COL_COLORS[3],
+    'purple': COL_COLORS[4],
+    'bright': TEXT_BRIGHT,
+    'main':   TEXT_MAIN,
+    'muted':  TEXT_MUTED,
+    'dim':    TEXT_DIM,
+}
+
+def _parse_color(color_str):
+    """Convert a color name or #rrggbb string to an (r, g, b) tuple"""
+    c = color_str.strip().lower()
+    if c in _NAMED_COLORS:
+        return _NAMED_COLORS[c]
+    if re.match(r'^#[0-9a-f]{6}$', c):
+        return tuple(int(c[i:i+2], 16) for i in (1, 3, 5))
+    return None
+
+def draw_colored_text(draw, x, y, text, font, default_color):
+    """Draw text with inline [word](color) spans; unstyled text uses default_color"""
+    segments = re.split(r'(\[.*?\]\([^)]*\))', text)
+    cx = x
+    for seg in segments:
+        m = re.fullmatch(r'\[([^\]]*)\]\(([^)]*)\)', seg)
+        if m:
+            label, color_str = m.group(1), m.group(2)
+            color = _parse_color(color_str) or default_color
+        else:
+            label, color = seg, default_color
+        if label:
+            draw.text((cx, y), label, font=font, fill=color)
+            cx += font.getbbox(label)[2]
+
+# ══════════════════════════════════════════════
 #  COLUMN FILE READER
 # ══════════════════════════════════════════════
-def strip_frontmatter(text):
-    """Strip YAML frontmatter block (--- ... ---) from the top of the file"""
-    if text.startswith('---\n'):
-        end = text.find('\n---\n', 4)
-        if end != -1:
-            return text[end + 5:]
-    return text
+def parse_frontmatter(text):
+    """Extract YAML frontmatter fields and return (fields_dict, remaining_text)"""
+    if not text.startswith('---\n'):
+        return {}, text
+    end = text.find('\n---\n', 4)
+    if end == -1:
+        return {}, text
+    fields = {}
+    for line in text[4:end].splitlines():
+        if ':' in line:
+            key, _, val = line.partition(':')
+            fields[key.strip()] = val.strip()
+    return fields, text[end + 5:]
 
 def strip_html_comments(text):
     """Remove HTML comment lines (<!-- ... -->) used as file footers"""
@@ -94,30 +133,30 @@ def strip_html_comments(text):
     return '\n'.join(lines)
 
 def read_column_file(path):
-    """Read a single column file, removing frontmatter header and HTML comment footer"""
+    """Read a column file and return (title, content) — title comes from frontmatter"""
     text = path.read_text(encoding='utf-8')
-    text = strip_frontmatter(text)
+    fields, text = parse_frontmatter(text)
     text = strip_html_comments(text)
-    return text.strip()
+    title = fields.get('title', path.stem)
+    return title, text.strip()
 
 def read_content():
     """Read all column*.md files from content/ in sorted order and join them as sections"""
     col_files = sorted(CONTENT_DIR.glob('column*.md'))
     if not col_files:
-        return None, []
-    sections = [read_column_file(f) for f in col_files]
-    return '\n---\n'.join(sections), col_files
+        return None, [], []
+    titles, sections = zip(*[read_column_file(f) for f in col_files])
+    return '\n---\n'.join(sections), list(col_files), list(titles)
 
 # ══════════════════════════════════════════════
 #  SINGLE COLUMN RENDERER
 # ══════════════════════════════════════════════
 def render_column(draw, md_text, x, y, w, h, col_index, col_title,
                   font_n, font_b, font_s, font_ss):
-    color = COL_COLORS[col_index % len(COL_COLORS)]
-    padding = 22
-    cx = x + padding
-    max_w = w - padding * 2
-    cy = y
+    color  = COL_COLORS[col_index % len(COL_COLORS)]
+    cx     = x + COL_PADDING
+    max_w  = w - COL_PADDING * 2
+    cy     = y
 
     # Colored top bar
     draw.rectangle([x, y, x+w, y+2], fill=color)
@@ -135,8 +174,8 @@ def render_column(draw, md_text, x, y, w, h, col_index, col_title,
     cy += 12
 
     # Parse and draw each line
-    lines = md_text.strip().split('\n')
-    in_code = False
+    lines    = md_text.strip().split('\n')
+    in_code  = False
     code_buf = []
 
     for raw_line in lines:
@@ -147,7 +186,7 @@ def render_column(draw, md_text, x, y, w, h, col_index, col_title,
 
         if kind == 'code_toggle':
             if not in_code:
-                in_code = True
+                in_code  = True
                 code_buf = []
             else:
                 in_code = False
@@ -188,12 +227,12 @@ def render_column(draw, md_text, x, y, w, h, col_index, col_title,
             cy += font_s.getbbox(text)[3] + 4
 
         elif kind == 'li':
-            clean = strip_inline(text)
+            clean   = strip_inline(text)
             wrapped = textwrap.wrap(clean, width=max_w//7)
             for i, wline in enumerate(wrapped):
                 prefix = '›  ' if i == 0 else '   '
                 draw.text((cx, cy), prefix, font=font_n, fill=TEXT_DIM)
-                fw = font_n.getbbox(prefix)[2]
+                fw  = font_n.getbbox(prefix)[2]
                 clr = TEXT_BRIGHT if is_bold_segment(text) and i == 0 else TEXT_MAIN
                 draw.text((cx+fw, cy), wline, font=font_n, fill=clr)
                 cy += 18
@@ -206,7 +245,7 @@ def render_column(draw, md_text, x, y, w, h, col_index, col_title,
             cy += 20
 
         elif kind == 'p':
-            clean = strip_inline(text)
+            clean   = strip_inline(text)
             wrapped = textwrap.wrap(clean, width=max_w//7)
             for wline in wrapped:
                 clr = TEXT_BRIGHT if is_bold_segment(text) else TEXT_MAIN
@@ -217,30 +256,28 @@ def render_column(draw, md_text, x, y, w, h, col_index, col_title,
 # ══════════════════════════════════════════════
 #  MAIN RENDER
 # ══════════════════════════════════════════════
-def render(content_md, header_text, footer_text):
+def render(content_md, col_titles, header_text, footer_text):
     img  = Image.new('RGB', (WIDTH, HEIGHT), BG)
     draw = ImageDraw.Draw(img)
 
-    # Load fonts
-    fn  = find_font(12)        # normal
-    fb  = find_font(12, True)  # bold
-    fs  = find_font(11)        # small
-    fss = find_font(10)        # tiny
+    fn  = find_font(FONT_SIZE_NORMAL)
+    fb  = find_font(FONT_SIZE_NORMAL, bold=True)
+    fs  = find_font(FONT_SIZE_SMALL)
+    fss = find_font(FONT_SIZE_TINY)
 
     # ── TOPBAR — raw text from header.md ──
-    draw.rectangle([0, 0, WIDTH, 36], fill=(12,12,12))
-    draw.line([0, 36, WIDTH, 36], fill=BORDER, width=1)
-    draw.text((14, 11), header_text, font=find_font(11, True), fill=COL_COLORS[0])
+    draw.rectangle([0, 0, WIDTH, TOPBAR_H], fill=(12,12,12))
+    draw.line([0, TOPBAR_H, WIDTH, TOPBAR_H], fill=BORDER, width=1)
+    draw_colored_text(draw, 14, 11, header_text, fb, COL_COLORS[0])
 
     # ── COLUMNS ──
     sections = re.split(r'\n---\n', content_md)
-    col_titles = ["ЗАДАЧИ", "ЗАМЕТКИ", "ЦИТАТЫ", "СИСТЕМА", "ПРОЧЕЕ"]
-    count = min(len(sections), 5)
-    col_w = WIDTH // count
-    col_y = 38
-    col_h = HEIGHT - 38 - 28
+    count    = min(len(sections), MAX_COLUMNS)
+    col_w    = WIDTH // count
+    col_y    = TOPBAR_H + 2
+    col_h    = HEIGHT - TOPBAR_H - FOOTER_H - 2
 
-    for i, (sec, title) in enumerate(zip(sections[:5], col_titles[:count])):
+    for i, (sec, title) in enumerate(zip(sections[:MAX_COLUMNS], col_titles[:count])):
         cx = i * col_w
         # Vertical divider between columns
         if i > 0:
@@ -249,10 +286,10 @@ def render(content_md, header_text, footer_text):
                       fn, fb, fs, fss)
 
     # ── FOOTER — raw text from footer.md ──
-    fy = HEIGHT - 26
+    fy = HEIGHT - FOOTER_H
     draw.rectangle([0, fy, WIDTH, HEIGHT], fill=(12,12,12))
     draw.line([0, fy, WIDTH, fy], fill=BORDER, width=1)
-    draw.text((14, fy+7), footer_text, font=fss, fill=TEXT_MUTED)
+    draw_colored_text(draw, 14, fy+7, footer_text, fss, TEXT_MUTED)
 
     return img
 
@@ -264,7 +301,7 @@ def main():
         print(f"Content directory not found: {CONTENT_DIR}")
         sys.exit(1)
 
-    content, col_files = read_content()
+    content, col_files, col_titles = read_content()
     if not content:
         print(f"No column*.md files found in: {CONTENT_DIR}")
         sys.exit(1)
@@ -275,7 +312,7 @@ def main():
     header_text = (CONTENT_DIR / "header.md").read_text(encoding='utf-8').strip()
     footer_text = (CONTENT_DIR / "footer.md").read_text(encoding='utf-8').strip()
 
-    img = render(content, header_text, footer_text)
+    img = render(content, col_titles, header_text, footer_text)
 
     # Save PNG
     OUTPUT_PNG.parent.mkdir(parents=True, exist_ok=True)

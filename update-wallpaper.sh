@@ -1,10 +1,10 @@
 #!/bin/bash
-# Обновить обои — запускай вручную или через cron
 
+# Update wallpaper - run manually or via cron
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Установить Pillow если нет
+# Install Pillow if not present
 python3 -c "import PIL" 2>/dev/null || pip3 install pillow --break-system-packages
 
-# Сгенерировать и установить
+# Generate and install
 python3 "$SCRIPT_DIR/generate_wallpaper.py"

@@ -1,1 +1,1 @@
-DESK·OS  │  ~/wallpaper/content/
+[DESK·OS](green) │ [~/wallpaper/content/](muted)

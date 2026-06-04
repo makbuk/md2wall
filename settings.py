@@ -1,0 +1,31 @@
+from pathlib import Path
+
+# ── Output ──────────────────────────────────────
+WIDTH      = 1920
+HEIGHT     = 1080
+OUTPUT_PNG = Path.home() / ".config" / "desk-os-wallpaper.png"
+
+# ── Content ─────────────────────────────────────
+CONTENT_DIR = Path(__file__).parent / "content"
+
+# ── Columns ─────────────────────────────────────
+MAX_COLUMNS = 5
+
+# ── Layout ──────────────────────────────────────
+TOPBAR_H       = 36
+FOOTER_H       = 26
+COL_PADDING    = 22
+
+# ── Fonts ───────────────────────────────────────
+FONT_SIZE_NORMAL = 12
+FONT_SIZE_SMALL  = 11
+FONT_SIZE_TINY   = 10
+
+# ── Colors ──────────────────────────────────────
+BG          = (8, 8, 8)
+COL_COLORS  = [(0,255,136), (0,207,255), (255,107,107), (255,204,0), (200,130,255)]
+TEXT_BRIGHT = (238, 238, 238)
+TEXT_MAIN   = (187, 187, 187)
+TEXT_MUTED  = (85, 85, 85)
+TEXT_DIM    = (51, 51, 51)
+BORDER      = (26, 26, 26)
