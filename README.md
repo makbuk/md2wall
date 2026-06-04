@@ -95,7 +95,7 @@ PNG transparency is composited correctly. Supported formats: PNG, JPG, and any f
 Individual words and characters can be colored using `[text](color)` syntax:
 
 ```
-[DESK·OS](green) │ [~/wallpaper/content/](muted)
+[DESK·OS](green) │ [~/md2wall/content/](muted)
 ```
 
 ### Named colors
