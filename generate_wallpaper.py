@@ -29,15 +29,41 @@ from settings import (
 # ══════════════════════════════════════════════
 #  FONTS — look for JetBrains Mono or fallback
 # ══════════════════════════════════════════════
-def find_font(size, bold=False):
-    candidates = [
-        f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-{'Bold' if bold else 'Regular'}.ttf",
-        f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono{'Bold' if bold else ''}.ttf",
-        f"{Path.home()}/.local/share/fonts/JetBrainsMono-{'Bold' if bold else 'Regular'}.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
-        "/usr/share/fonts/truetype/ubuntu/UbuntuMono-B.ttf" if bold else "/usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf",
-    ]
+def find_font(size, bold=False, italic=False):
+    if bold and italic:
+        candidates = [
+            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-BoldItalic.ttf",
+            f"{Path.home()}/.local/share/fonts/JetBrainsMono-BoldItalic.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-BoldOblique.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationMono-BoldItalic.ttf",
+            "/usr/share/fonts/truetype/ubuntu/UbuntuMono-BI.ttf",
+        ]
+    elif italic:
+        candidates = [
+            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Italic.ttf",
+            f"{Path.home()}/.local/share/fonts/JetBrainsMono-Italic.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Oblique.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationMono-Italic.ttf",
+            "/usr/share/fonts/truetype/ubuntu/UbuntuMono-RI.ttf",
+        ]
+    elif bold:
+        candidates = [
+            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Bold.ttf",
+            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Bold.ttf",
+            f"{Path.home()}/.local/share/fonts/JetBrainsMono-Bold.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
+            "/usr/share/fonts/truetype/ubuntu/UbuntuMono-B.ttf",
+        ]
+    else:
+        candidates = [
+            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Regular.ttf",
+            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono.ttf",
+            f"{Path.home()}/.local/share/fonts/JetBrainsMono-Regular.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+            "/usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf",
+        ]
     for path in candidates:
         if os.path.exists(path):
             return ImageFont.truetype(path, size)
@@ -155,7 +181,7 @@ def read_content():
 #  SINGLE COLUMN RENDERER
 # ══════════════════════════════════════════════
 def render_column(img, draw, md_text, x, y, w, h, col_index, col_title,
-                  font_n, font_b, font_s, font_ss):
+                  font_n, font_b, font_s, font_ss, font_i):
     color  = COL_COLORS[col_index % len(COL_COLORS)]
     cx     = x + COL_PADDING
     max_w  = w - COL_PADDING * 2
@@ -177,9 +203,10 @@ def render_column(img, draw, md_text, x, y, w, h, col_index, col_title,
     cy += 12
 
     # Parse and draw each line
-    lines    = md_text.strip().split('\n')
-    in_code  = False
-    code_buf = []
+    lines     = md_text.strip().split('\n')
+    in_code   = False
+    in_italic = False
+    code_buf  = []
 
     for raw_line in lines:
         if cy > y + h - 20:
@@ -268,11 +295,29 @@ def render_column(img, draw, md_text, x, y, w, h, col_index, col_title,
             cy += 20
 
         elif kind == 'p':
+            # Detect start/end of a multi-line italic block (* ... *)
+            stripped = text.strip()
+            render_italic = in_italic
+            if not in_italic and stripped.startswith('*') and not stripped.endswith('*'):
+                in_italic = True
+                render_italic = True
+                text = stripped[1:]
+            elif in_italic and stripped.endswith('*'):
+                in_italic = False
+                render_italic = True
+                text = stripped[:-1]
+            elif not in_italic and stripped.startswith('*') and stripped.endswith('*') and len(stripped) > 1:
+                render_italic = True
+                text = stripped[1:-1]
             clean   = strip_inline(text)
             wrapped = textwrap.wrap(clean, width=max_w//7)
             for wline in wrapped:
-                clr = TEXT_BRIGHT if is_bold_segment(text) else TEXT_MAIN
-                draw.text((cx, cy), wline, font=font_n, fill=clr)
+                if render_italic:
+                    draw.text((cx, cy), wline, font=font_i, fill=TEXT_MUTED)
+                elif is_bold_segment(text):
+                    draw.text((cx, cy), wline, font=font_n, fill=TEXT_BRIGHT)
+                else:
+                    draw.text((cx, cy), wline, font=font_n, fill=TEXT_MAIN)
                 cy += 18
             cy += 2
 
@@ -285,6 +330,7 @@ def render(content_md, col_titles, header_text, footer_text):
 
     fn  = find_font(FONT_SIZE_NORMAL)
     fb  = find_font(FONT_SIZE_NORMAL, bold=True)
+    fi  = find_font(FONT_SIZE_NORMAL, italic=True)
     fs  = find_font(FONT_SIZE_SMALL)
     fss = find_font(FONT_SIZE_TINY)
 
@@ -306,7 +352,7 @@ def render(content_md, col_titles, header_text, footer_text):
         if i > 0:
             draw.line([cx, col_y, cx, col_y+col_h], fill=BORDER, width=1)
         render_column(img, draw, sec, cx, col_y, col_w, col_h, i, title,
-                      fn, fb, fs, fss)
+                      fn, fb, fs, fss, fi)
 
     # ── FOOTER — raw text from footer.md ──
     fy = HEIGHT - FOOTER_H
