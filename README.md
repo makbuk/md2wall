@@ -1,8 +1,8 @@
 # md2wall
 
-Генератор обоев для KDE из Markdown-файлов. Читает колонки из папки `content/`, рендерит PNG 1920×1080 и устанавливает как обои через KDE API.
+KDE wallpaper generator from Markdown files. Reads columns from the `content/` folder, renders a 1920×1080 PNG and sets it as wallpaper via the KDE API.
 
-## Установка и запуск
+## Installation & usage
 
 ```bash
 git clone https://github.com/makbuk/md2wall
@@ -10,110 +10,108 @@ cd md2wall
 bash update-wallpaper.sh
 ```
 
-Pillow устанавливается автоматически при первом запуске.
+Pillow is installed automatically on the first run.
 
-## Структура проекта
+## Project structure
 
 ```
 md2wall/
-├── generate_wallpaper.py   — основной скрипт
-├── settings.py             — все настройки
-├── update-wallpaper.sh     — запуск / cron
+├── generate_wallpaper.py   — main script
+├── settings.py             — all settings
+├── update-wallpaper.sh     — run manually or via cron
 └── content/
-    ├── header.md           — текст верхней панели
-    ├── footer.md           — текст нижней панели
-    ├── column1.md          — колонка 1
-    ├── column2.md          — колонка 2
-    └── ...                 — любое количество до MAX_COLUMNS
+    ├── header.md           — top bar text
+    ├── footer.md           — bottom bar text
+    ├── column1.md          — column 1
+    ├── column2.md          — column 2
+    └── ...                 — any number of columns up to MAX_COLUMNS
 ```
 
-## Колонки
+## Columns
 
-Каждый файл `columnN.md` — это одна колонка на обоях. Файлы читаются в алфавитном порядке.
+Each `columnN.md` file is one wallpaper column. Files are read in alphabetical order.
 
-Структура файла:
+File format:
 
 ```markdown
 ---
 column: 1
-title: Задачи
+title: Tasks
 ---
 
-## Заголовок
+## Heading
 
-- пункт списка
-- ещё пункт
+- list item
+- another item
 
-> цитата
+> blockquote
 
-### Подзаголовок
+### Subheading
 
-Обычный текст, **жирный текст**
+Plain text, **bold text**
 
-    блок кода
+    code block
 
 <!-- /column:1 -->
 ```
 
-- `title:` — заголовок, который отображается в шапке колонки
-- Блок `---...---` (frontmatter) и комментарии `<!-- -->` вырезаются перед рендером
+- `title:` — column header shown in the column's top bar
+- The frontmatter block (`---...---`) and HTML comments (`<!-- -->`) are stripped before rendering
 
-## Хедер и футер
+## Header & footer
 
-Файлы `content/header.md` и `content/footer.md` — plain text, отображается как есть.
+`content/header.md` and `content/footer.md` are plain text files rendered as-is.
 
-Поддерживается разметка цвета для отдельных слов и символов:
+Individual words and characters can be colored using `[text](color)` syntax:
 
 ```
 [DESK·OS](green) │ [~/wallpaper/content/](muted)
 ```
 
-Синтаксис: `[текст](цвет)`
+### Named colors
 
-### Именованные цвета
-
-| Имя | Описание |
+| Name | Description |
 |---|---|
-| `green` | акцентный зелёный (цвет колонки 1) |
-| `cyan` | акцентный голубой (цвет колонки 2) |
-| `red` | акцентный красный (цвет колонки 3) |
-| `yellow` | акцентный жёлтый (цвет колонки 4) |
-| `purple` | акцентный фиолетовый (цвет колонки 5) |
-| `bright` | яркий белый |
-| `main` | основной текст |
-| `muted` | приглушённый серый |
-| `dim` | тёмно-серый |
-| `#rrggbb` | любой hex-цвет |
+| `green` | accent green (column 1) |
+| `cyan` | accent cyan (column 2) |
+| `red` | accent red (column 3) |
+| `yellow` | accent yellow (column 4) |
+| `purple` | accent purple (column 5) |
+| `bright` | bright white |
+| `main` | default text |
+| `muted` | muted gray |
+| `dim` | dark gray |
+| `#rrggbb` | any hex color |
 
-Текст без разметки отображается цветом по умолчанию (для хедера — `green`, для футера — `muted`).
+Text without markup uses the default color (header — `green`, footer — `muted`).
 
-## Настройки
+## Settings
 
-Все настройки находятся в `settings.py`:
+All settings are in `settings.py`:
 
 ```python
-# Разрешение
+# Resolution
 WIDTH  = 1920
 HEIGHT = 1080
 
-# Пути
+# Paths
 OUTPUT_PNG  = Path.home() / ".config" / "desk-os-wallpaper.png"
 CONTENT_DIR = Path(__file__).parent / "content"
 
-# Колонки
-MAX_COLUMNS = 5   # максимальное количество колонок
+# Columns
+MAX_COLUMNS = 5   # maximum number of columns
 
-# Отступы и панели
-TOPBAR_H    = 36  # высота верхней панели (px)
-FOOTER_H    = 26  # высота нижней панели (px)
-COL_PADDING = 22  # внутренний отступ колонки (px)
+# Layout
+TOPBAR_H    = 36  # top bar height (px)
+FOOTER_H    = 26  # bottom bar height (px)
+COL_PADDING = 22  # inner column padding (px)
 
-# Размеры шрифтов
+# Font sizes
 FONT_SIZE_NORMAL = 12
 FONT_SIZE_SMALL  = 11
 FONT_SIZE_TINY   = 10
 
-# Цвета (RGB)
+# Colors (RGB)
 BG          = (8, 8, 8)
 COL_COLORS  = [(0,255,136), (0,207,255), (255,107,107), (255,204,0), (200,130,255)]
 TEXT_BRIGHT = (238, 238, 238)
@@ -123,23 +121,23 @@ TEXT_DIM    = (51, 51, 51)
 BORDER      = (26, 26, 26)
 ```
 
-`COL_COLORS` — список акцентных цветов колонок по порядку (зелёный, голубой, красный, жёлтый, фиолетовый).
+`COL_COLORS` — accent colors assigned to columns in order (green, cyan, red, yellow, purple).
 
-## Автообновление через cron
+## Auto-update via cron
 
 ```bash
 crontab -e
 ```
 
-Добавить строку (обновление каждые 10 минут):
+Add a line to refresh every 10 minutes:
 
 ```
-*/10 * * * * bash /путь/до/update-wallpaper.sh
+*/10 * * * * bash /path/to/update-wallpaper.sh
 ```
 
-## Требования
+## Requirements
 
 - Python 3.8+
 - KDE Plasma (Kubuntu 22.04+)
-- Pillow (устанавливается автоматически)
-- Шрифт JetBrains Mono (опционально, есть fallback на DejaVu / Liberation / Ubuntu Mono)
+- Pillow (installed automatically)
+- JetBrains Mono font (optional — falls back to DejaVu / Liberation / Ubuntu Mono)
