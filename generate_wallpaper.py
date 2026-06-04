@@ -138,8 +138,9 @@ def _parse_color(color_str):
         return tuple(int(c[i:i+2], 16) for i in (1, 3, 5))
     return None
 
-def draw_colored_text(draw, x, y, text, font, default_color):
-    """Draw text with inline [word](color) spans; unstyled text uses default_color"""
+def draw_colored_text(draw, x, y, text, font, default_color, max_right=None):
+    """Draw text with inline [word](color) spans; unstyled text uses default_color.
+    If max_right is set, stops drawing at that x coordinate."""
     segments = re.split(r'(\[.*?\]\([^)]*\))', text)
     cx = x
     for seg in segments:
@@ -150,6 +151,8 @@ def draw_colored_text(draw, x, y, text, font, default_color):
         else:
             label, color = seg, default_color
         if label:
+            if max_right is not None and cx >= max_right:
+                break
             draw.text((cx, y), label, font=font, fill=color)
             cx += font.getbbox(label)[2]
 
@@ -294,16 +297,44 @@ def render_column(img, draw, md_text, x, y, w, h, col_index, col_title,
             cy += font_s.getbbox(text)[3] + 4
 
         elif kind == 'li':
-            clean   = strip_inline(text)
-            wrapped = textwrap.wrap(clean, width=max_w//7)
-            for i, wline in enumerate(wrapped):
-                prefix = '›  ' if i == 0 else '   '
-                draw.text((cx, cy), prefix, font=font_n, fill=TEXT_DIM)
-                fw  = font_n.getbbox(prefix)[2]
-                clr = TEXT_BRIGHT if is_bold_segment(text) and i == 0 else TEXT_MAIN
-                draw.text((cx+fw, cy), wline, font=font_n, fill=clr)
-                cy += 18
-            cy += 1
+            prefix = '›  '
+            draw.text((cx, cy), prefix, font=font_n, fill=TEXT_DIM)
+            fw = font_n.getbbox(prefix)[2]
+            max_right = x + w - COL_PADDING
+            indent = cx + fw
+            if re.search(r'\[.*?\]\([^)]*\)', text):
+                # Split into command span and description (after " — ")
+                m_sep = re.search(r'^(\[.*?\]\([^)]*\))(.*)', text)
+                if m_sep and ' — ' in m_sep.group(2):
+                    cmd_span = m_sep.group(1)
+                    rest     = m_sep.group(2)  # starts with " — description"
+                    draw_colored_text(draw, indent, cy, cmd_span, font_n, TEXT_MAIN, max_right=max_right)
+                    cmd_w = font_n.getbbox(re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', cmd_span))[2]
+                    # Draw description on same line if fits, else wrap to next line
+                    desc_x = indent + cmd_w
+                    desc_text = rest
+                    desc_w = font_n.getbbox(desc_text)[2]
+                    if desc_x + desc_w <= max_right:
+                        draw.text((desc_x, cy), desc_text, font=font_n, fill=TEXT_MAIN)
+                        cy += 19
+                    else:
+                        cy += 19
+                        desc_clean = rest.lstrip(' —').lstrip()
+                        wrapped = textwrap.wrap(f"— {desc_clean}", width=(max_right - indent) // 7)
+                        for wline in wrapped:
+                            draw.text((indent + 4, cy), wline, font=font_n, fill=TEXT_MAIN)
+                            cy += 17
+                else:
+                    draw_colored_text(draw, indent, cy, text, font_n, TEXT_MAIN, max_right=max_right)
+                    cy += 19
+            else:
+                clean = strip_inline(text)
+                clr   = TEXT_BRIGHT if is_bold_segment(text) else TEXT_MAIN
+                wrapped = textwrap.wrap(clean, width=(max_right - indent) // 7)
+                for i, wline in enumerate(wrapped):
+                    draw.text((indent if i == 0 else indent + 4, cy), wline, font=font_n, fill=clr)
+                    cy += 17
+                cy += 2
 
         elif kind == 'bq':
             draw.rectangle([cx, cy, cx+3, cy+16], fill=COL_COLORS[2])
