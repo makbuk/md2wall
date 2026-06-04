@@ -98,6 +98,20 @@ def is_bold_segment(text):
     return bool(re.search(r'\*\*.*?\*\*', text))
 
 # ══════════════════════════════════════════════
+#  IMAGE HELPERS
+# ══════════════════════════════════════════════
+def crop_circle(image):
+    """Return image cropped to a circle using an alpha mask"""
+    image = image.convert('RGBA')
+    size  = min(image.width, image.height)
+    image = image.crop((0, 0, size, size))
+    mask  = Image.new('L', (size, size), 0)
+    ImageDraw.Draw(mask).ellipse((0, 0, size, size), fill=255)
+    result = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    result.paste(image, mask=mask)
+    return result
+
+# ══════════════════════════════════════════════
 #  COLORED TEXT RENDERER
 #  Syntax: [text](color)  where color is a name
 #  (green/cyan/red/yellow/purple/bright/main/muted/dim)
@@ -220,12 +234,15 @@ def render_column(img, draw, md_text, x, y, w, h, col_index, col_title,
             if img_path.exists():
                 try:
                     icon = Image.open(img_path).convert('RGBA')
-                    m = re.match(r'^(\d+)x(\d+)$', size_str.lower())
-                    if m:
-                        icon = icon.resize((int(m.group(1)), int(m.group(2))), Image.LANCZOS)
+                    circle = re.match(r'^(\d+)c$', size_str.lower())
+                    rect   = re.match(r'^(\d+)x(\d+)$', size_str.lower())
+                    if circle:
+                        d    = int(circle.group(1))
+                        icon = crop_circle(icon.resize((d, d), Image.LANCZOS))
+                    elif rect:
+                        icon = icon.resize((int(rect.group(1)), int(rect.group(2))), Image.LANCZOS)
                     img.paste(icon, (cx, cy), icon)
                     if label:
-                        # Vertically center label next to the image
                         label_y = cy + (icon.height - font_n.getbbox('A')[3]) // 2
                         draw.text((cx + icon.width + 8, label_y), label.strip(), font=font_n, fill=TEXT_MAIN)
                     cy += icon.height + 6

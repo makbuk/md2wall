@@ -62,18 +62,31 @@ Plain text, **bold text**
 
 ## Images
 
-Place image files in `content/images/` and reference them in any column using standard Markdown image syntax.
+Place image files in `content/images/` and reference them in any column using Markdown image syntax.
+
+The alt text controls the display size and shape:
 
 ```markdown
 ![](images/logo.png)               — original size
-![32x32](images/icon.png)          — scaled to 32×32 px
-![32x32](images/icon.png) KDE      — image with text label alongside
+![32x32](images/icon.png)          — rectangle, scaled to 32×32 px
+![48c](images/avatar.png)          — circle, diameter 48 px
+![32x32](images/icon.png) KDE      — rectangle with a text label
+![48c](images/avatar.png) KDE      — circle with a text label
 ```
 
-- The alt text (`32x32`) sets the display size as `WxH` in pixels. Omit it to use the original size.
-- Any text after the closing `)` is rendered next to the image, vertically centered.
-- PNG images with transparency are composited correctly.
-- Supported formats: PNG, JPG, and any format supported by Pillow.
+### Size formats
+
+| Format | Shape | Example |
+|---|---|---|
+| _(none)_ | original size | `![](...)`  |
+| `WxH` | rectangle | `![32x32](...)` |
+| `Nc` | circle, N = diameter in px | `![48c](...)` |
+
+The circle shape crops the image to fit inside a circle of the given diameter — useful for avatars and round icons. The `c` stands for **c**ircle.
+
+Text after the closing `)` is rendered to the right of the image, vertically centered.
+
+PNG transparency is composited correctly. Supported formats: PNG, JPG, and any format supported by Pillow.
 
 ## Header & footer
 
