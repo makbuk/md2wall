@@ -1,1 +1,1 @@
-[DESK·OS](green) │ [~/wallpaper/content/](muted)
+[DESK·OS](green) │ [~/md2wall/content/](muted)
