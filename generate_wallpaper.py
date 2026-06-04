@@ -54,6 +54,7 @@ def parse_md_line(line):
     if line.startswith('- '):   return ('li', line[2:].strip(), '')
     if line.startswith('> '):   return ('bq', line[2:].strip(), '')
     if line.startswith('```'):  return ('code_toggle', '', '')
+    if line.strip() == '---':   return ('hr', '', '')
     if line.strip() == '':      return ('empty', '', '')
     m = re.match(r'^!\[([^\]]*)\]\(([^)]+)\)(.*)', line.strip())
     if m:                       return ('img', m.group(2).strip(), (m.group(1).strip(), m.group(3).strip()))
@@ -148,7 +149,7 @@ def read_content():
     if not col_files:
         return None, [], []
     titles, sections = zip(*[read_column_file(f) for f in col_files])
-    return '\n---\n'.join(sections), list(col_files), list(titles)
+    return '\n[[COL]]\n'.join(sections), list(col_files), list(titles)
 
 # ══════════════════════════════════════════════
 #  SINGLE COLUMN RENDERER
@@ -228,19 +229,20 @@ def render_column(img, draw, md_text, x, y, w, h, col_index, col_title,
             cy += 6
             continue
 
-        if kind == 'h1':
+        if kind == 'hr':
+            cy += 6
+            draw.line([cx, cy, cx+max_w, cy], fill=BORDER, width=1)
+            cy += 8
+
+        elif kind == 'h1':
             cy += 4
             draw.text((cx, cy), text.upper(), font=font_b, fill=TEXT_BRIGHT)
-            cy += font_b.getbbox(text)[3] + 8
-            draw.line([cx, cy, cx+max_w, cy], fill=BORDER, width=1)
-            cy += 6
+            cy += font_b.getbbox(text)[3] + 4
 
         elif kind == 'h2':
             cy += 6
             draw.text((cx, cy), text, font=font_b, fill=TEXT_BRIGHT)
-            cy += font_b.getbbox(text)[3] + 3
-            draw.line([cx, cy, cx+max_w, cy], fill=BORDER, width=1)
-            cy += 6
+            cy += font_b.getbbox(text)[3] + 4
 
         elif kind == 'h3':
             cy += 4
@@ -292,7 +294,7 @@ def render(content_md, col_titles, header_text, footer_text):
     draw_colored_text(draw, 14, 11, header_text, fb, COL_COLORS[0])
 
     # ── COLUMNS ──
-    sections = re.split(r'\n---\n', content_md)
+    sections = content_md.split('\n[[COL]]\n')
     count    = min(len(sections), MAX_COLUMNS)
     col_w    = WIDTH // count
     col_y    = TOPBAR_H + 2

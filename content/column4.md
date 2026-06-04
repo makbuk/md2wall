@@ -6,6 +6,8 @@ color: yellow
 
 ## Колонка 4: Система
 
+---
+
 Hostname: **arch-tower**
 Uptime: 3 дня
 RAM: 12.4 / 32 GB
