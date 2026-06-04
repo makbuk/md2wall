@@ -1,5 +1,7 @@
 # md2wall
 
+![preview](desk-os-wallpaper.png)
+
 KDE wallpaper generator from Markdown files. Reads columns from the `content/` folder, renders a 1920×1080 PNG and sets it as wallpaper via the KDE API.
 
 ## Installation & usage
