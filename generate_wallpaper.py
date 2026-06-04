@@ -9,6 +9,7 @@ import sys
 import os
 import re
 import textwrap
+import time
 from pathlib import Path
 
 try:
@@ -431,40 +432,46 @@ def main():
 
     img = render(content, col_titles, header_text, footer_text)
 
-    # Save PNG
+    # Save to a timestamped filename so KDE always sees a new path and refreshes
     OUTPUT_PNG.parent.mkdir(parents=True, exist_ok=True)
-    img.save(str(OUTPUT_PNG))
-    print(f"Saved: {OUTPUT_PNG}")
+    output_path = OUTPUT_PNG.parent / f"desk-os-wallpaper-{int(time.time())}.png"
+    img.save(str(output_path))
+    print(f"Saved: {output_path}")
 
-    # Set as KDE wallpaper
-    uri = f"file://{OUTPUT_PNG}"
-    # Try plasma-apply-wallpaperimage first (Kubuntu 22.04+)
-    result = subprocess.run(
-        ["plasma-apply-wallpaperimage", str(OUTPUT_PNG)],
-        capture_output=True, text=True
-    )
-    if result.returncode == 0:
-        print("✓ Wallpaper set via plasma-apply-wallpaperimage")
-    else:
-        # Fallback: use qdbus
-        result2 = subprocess.run([
-            "qdbus", "org.kde.plasmashell", "/PlasmaShell",
-            "org.kde.PlasmaShell.evaluateScript",
-            f"""
+    # Remove previous wallpaper files, keep only the new one
+    for old in OUTPUT_PNG.parent.glob("desk-os-wallpaper-*.png"):
+        if old != output_path:
+            old.unlink(missing_ok=True)
+
+    # Set as KDE wallpaper via qdbus
+    uri = f"file://{output_path}"
+    result = subprocess.run([
+        "qdbus", "org.kde.plasmashell", "/PlasmaShell",
+        "org.kde.PlasmaShell.evaluateScript",
+        f"""
 var allDesktops = desktops();
 for (var i=0; i<allDesktops.length; i++) {{
     var d = allDesktops[i];
     d.wallpaperPlugin = 'org.kde.image';
     d.currentConfigGroup = ['Wallpaper','org.kde.image','General'];
     d.writeConfig('Image', '{uri}');
+    d.reloadConfig();
 }}
 """
-        ], capture_output=True, text=True)
+    ], capture_output=True, text=True)
+    if result.returncode == 0:
+        print("✓ Wallpaper updated via qdbus")
+    else:
+        # Fallback: plasma-apply-wallpaperimage (Kubuntu 22.04+)
+        result2 = subprocess.run(
+            ["plasma-apply-wallpaperimage", str(output_path)],
+            capture_output=True, text=True
+        )
         if result2.returncode == 0:
-            print("✓ Wallpaper set via qdbus")
+            print("✓ Wallpaper set via plasma-apply-wallpaperimage")
         else:
-            print(f"Failed to set wallpaper: {result2.stderr}")
-            print(f"Set manually: {OUTPUT_PNG}")
+            print(f"Failed to set wallpaper: {result.stderr}")
+            print(f"Set manually: {output_path}")
 
 if __name__ == "__main__":
     main()
