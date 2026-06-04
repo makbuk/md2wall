@@ -47,15 +47,17 @@ def find_font(size, bold=False):
 #  MARKDOWN PARSER
 # ══════════════════════════════════════════════
 def parse_md_line(line):
-    """Returns (type, text, level)"""
-    if line.startswith('### '): return ('h3', line[4:].strip(), 3)
-    if line.startswith('## '):  return ('h2', line[3:].strip(), 2)
-    if line.startswith('# '):   return ('h1', line[2:].strip(), 1)
-    if line.startswith('- '):   return ('li', line[2:].strip(), 0)
-    if line.startswith('> '):   return ('bq', line[2:].strip(), 0)
-    if line.startswith('```'):  return ('code_toggle', '', 0)
-    if line.strip() == '':      return ('empty', '', 0)
-    return ('p', line.strip(), 0)
+    """Returns (type, text, extra) — for img: text=path, extra=size string or empty"""
+    if line.startswith('### '): return ('h3', line[4:].strip(), '')
+    if line.startswith('## '):  return ('h2', line[3:].strip(), '')
+    if line.startswith('# '):   return ('h1', line[2:].strip(), '')
+    if line.startswith('- '):   return ('li', line[2:].strip(), '')
+    if line.startswith('> '):   return ('bq', line[2:].strip(), '')
+    if line.startswith('```'):  return ('code_toggle', '', '')
+    if line.strip() == '':      return ('empty', '', '')
+    m = re.match(r'^!\[([^\]]*)\]\(([^)]+)\)(.*)', line.strip())
+    if m:                       return ('img', m.group(2).strip(), (m.group(1).strip(), m.group(3).strip()))
+    return ('p', line.strip(), '')
 
 def strip_inline(text):
     """Remove ** * ` markers from text before rendering"""
@@ -151,7 +153,7 @@ def read_content():
 # ══════════════════════════════════════════════
 #  SINGLE COLUMN RENDERER
 # ══════════════════════════════════════════════
-def render_column(draw, md_text, x, y, w, h, col_index, col_title,
+def render_column(img, draw, md_text, x, y, w, h, col_index, col_title,
                   font_n, font_b, font_s, font_ss):
     color  = COL_COLORS[col_index % len(COL_COLORS)]
     cx     = x + COL_PADDING
@@ -182,7 +184,26 @@ def render_column(draw, md_text, x, y, w, h, col_index, col_title,
         if cy > y + h - 20:
             break
 
-        kind, text, level = parse_md_line(raw_line)
+        kind, text, extra = parse_md_line(raw_line)
+
+        if kind == 'img':
+            size_str, label = extra
+            img_path = CONTENT_DIR / text
+            if img_path.exists():
+                try:
+                    icon = Image.open(img_path).convert('RGBA')
+                    m = re.match(r'^(\d+)x(\d+)$', size_str.lower())
+                    if m:
+                        icon = icon.resize((int(m.group(1)), int(m.group(2))), Image.LANCZOS)
+                    img.paste(icon, (cx, cy), icon)
+                    if label:
+                        # Vertically center label next to the image
+                        label_y = cy + (icon.height - font_n.getbbox('A')[3]) // 2
+                        draw.text((cx + icon.width + 8, label_y), label.strip(), font=font_n, fill=TEXT_MAIN)
+                    cy += icon.height + 6
+                except Exception:
+                    pass
+            continue
 
         if kind == 'code_toggle':
             if not in_code:
@@ -282,7 +303,7 @@ def render(content_md, col_titles, header_text, footer_text):
         # Vertical divider between columns
         if i > 0:
             draw.line([cx, col_y, cx, col_y+col_h], fill=BORDER, width=1)
-        render_column(draw, sec, cx, col_y, col_w, col_h, i, title,
+        render_column(img, draw, sec, cx, col_y, col_w, col_h, i, title,
                       fn, fb, fs, fss)
 
     # ── FOOTER — raw text from footer.md ──

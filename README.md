@@ -58,6 +58,21 @@ Plain text, **bold text**
 - `title:` — column header shown in the column's top bar
 - The frontmatter block (`---...---`) and HTML comments (`<!-- -->`) are stripped before rendering
 
+## Images
+
+Place image files in `content/images/` and reference them in any column using standard Markdown image syntax.
+
+```markdown
+![](images/logo.png)               — original size
+![32x32](images/icon.png)          — scaled to 32×32 px
+![32x32](images/icon.png) KDE      — image with text label alongside
+```
+
+- The alt text (`32x32`) sets the display size as `WxH` in pixels. Omit it to use the original size.
+- Any text after the closing `)` is rendered next to the image, vertically centered.
+- PNG images with transparency are composited correctly.
+- Supported formats: PNG, JPG, and any format supported by Pillow.
+
 ## Header & footer
 
 `content/header.md` and `content/footer.md` are plain text files rendered as-is.

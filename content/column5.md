@@ -18,4 +18,6 @@ color: purple
 - `free -h` — память
 - `ip a` — сеть
 
+![32x32](images/kde.png) Kubuntu
+
 <!-- /column:5 -->
