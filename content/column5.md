@@ -4,21 +4,21 @@ title: Other
 color: purple
 ---
 
-## Прочее
+## Other
 
 ---
 
-### Горячие клавиши
-- `Super+E` — файловый менеджер
-- `Super+T` — терминал
+### Hotkeys
+- `Super+E` — file manager
+- `Super+T` — terminal
 - `Ctrl+Alt+T` — Konsole
 - `Alt+F2` — KRunner
 
-### Полезные команды
-- `htop` — процессы
-- `df -h` — диски
-- `free -h` — память
-- `ip a` — сеть
+### Useful commands
+- `htop` — processes
+- `df -h` — disks
+- `free -h` — memory
+- `ip a` — network
 
 ![32x32](images/kde.png) Kubuntu
 

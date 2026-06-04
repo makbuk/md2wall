@@ -4,21 +4,21 @@ title: Tasks
 color: green
 ---
 
-# Моя заставка
+# My Wallpaper
 
-## Колонка 1: Задачи
+## Tasks
 
 ---
 
-- Разобраться с Docker
-- Настроить neovim
-- Прочитать книгу по Rust
-- Написать README для проекта
-- Обновить сервер
+- Learn Docker
+- Configure neovim
+- Read a book on Rust
+- Write README for the project
+- Update the server
 
-## Прогресс
+## Progress
 
-Проект: **Alpha** — 60%
-Дедлайн: 15 июня
+Project: **Alpha** — 60%
+Deadline: June 15
 
 <!-- /column:1 -->

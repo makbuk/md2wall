@@ -4,17 +4,17 @@ title: Notes
 color: cyan
 ---
 
-## Колонка 2: Заметки
+## Notes
 
 ---
 
-> Код — это поэзия,
-> которую читают машины.
+> Code is poetry
+> that machines read.
 
-Текущая ветка: `feature/dashboard`
+Current branch: `feature/dashboard`
 Last commit: fix auth middleware
 
-### Ссылки
+### Links
 - github.com/myproject
 - localhost:3000
 - 192.168.1.100:8080

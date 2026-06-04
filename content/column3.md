@@ -4,17 +4,17 @@ title: Quotes
 color: red
 ---
 
-## Колонка 3: Цитата дня
+## Quote of the Day
 
 ---
 
-*"Сначала сделай так, чтобы работало.
-Потом — чтобы работало правильно.
-И только потом — чтобы работало быстро."*
+*"First make it work.
+Then make it work correctly.
+Only then make it work fast."*
 
-— Кент Бек
+— Kent Beck
 
-### Сегодня
-Фокус: рефакторинг модуля авторизации
+### Today
+Focus: refactoring the auth module
 
 <!-- /column:3 -->

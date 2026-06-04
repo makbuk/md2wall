@@ -4,14 +4,14 @@ title: System
 color: yellow
 ---
 
-## Колонка 4: Система
+## System
 
 ---
 
 Hostname: **arch-tower**
-Uptime: 3 дня
+Uptime: 3 days
 RAM: 12.4 / 32 GB
-Диск: 234 / 500 GB
+Disk: 234 / 500 GB
 
 ```
 CPU  ████████░░ 78%
