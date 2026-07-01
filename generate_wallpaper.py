@@ -4,6 +4,7 @@ DESK·OS — MD → Wallpaper for Kubuntu
 Reads column files from content/, renders PNG, sets as KDE wallpaper
 """
 
+import argparse
 import subprocess
 import sys
 import os
@@ -15,9 +16,14 @@ from pathlib import Path
 try:
     from PIL import Image, ImageDraw, ImageFont
 except ImportError:
-    print("Installing Pillow...")
-    subprocess.run([sys.executable, "-m", "pip", "install", "pillow"], check=True)
+    print("Installing Pillow with uv...")
+    subprocess.run(["uv", "pip", "install", "--system", "pillow"], check=True)
     from PIL import Image, ImageDraw, ImageFont
+
+parser = argparse.ArgumentParser(description="Render a wallpaper from markdown content")
+parser.add_argument("-dir", "--dir", dest="content_dir", default=None,
+                    help="Content directory to use (default: content)")
+args = parser.parse_args()
 
 from settings import (
     WIDTH, HEIGHT, OUTPUT_PNG, CONTENT_DIR,
@@ -26,6 +32,15 @@ from settings import (
     FONT_SIZE_NORMAL, FONT_SIZE_SMALL, FONT_SIZE_TINY,
     BG, COL_COLORS, TEXT_BRIGHT, TEXT_MAIN, TEXT_MUTED, TEXT_DIM, BORDER,
 )
+
+if args.content_dir:
+    content_dir = Path(args.content_dir)
+    if not content_dir.is_absolute():
+        content_dir = Path(__file__).parent / content_dir
+else:
+    content_dir = Path(__file__).parent / "content"
+
+CONTENT_DIR = content_dir
 
 # ══════════════════════════════════════════════
 #  FONTS — look for JetBrains Mono or fallback

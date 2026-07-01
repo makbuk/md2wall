@@ -1,12 +1,14 @@
 from pathlib import Path
 
+BASE_DIR = Path(__file__).parent
+
 # ── Output ──────────────────────────────────────
 WIDTH      = 1920
 HEIGHT     = 1080
 OUTPUT_PNG = Path.home() / ".config" / "desk-os-wallpaper.png"
 
 # ── Content ─────────────────────────────────────
-CONTENT_DIR = Path(__file__).parent / "content"
+CONTENT_DIR = BASE_DIR / "content"
 
 # ── Columns ─────────────────────────────────────
 MAX_COLUMNS = 5

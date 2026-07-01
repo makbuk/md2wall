@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Update wallpaper - run manually or via cron
 
@@ -8,10 +8,23 @@ export DISPLAY=:0
 export XAUTHORITY=/home/makbuk/.Xauthority
 export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+CONTENT_DIR="content"
 
-# Install Pillow if not present
-python3 -c "import PIL" 2>/dev/null || pip3 install pillow --break-system-packages
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -dir=*|--dir=*)
+      CONTENT_DIR="${1#*=}"
+      ;;
+    -dir)
+      shift
+      if [ "$#" -gt 0 ]; then
+        CONTENT_DIR="$1"
+      fi
+      ;;
+  esac
+  shift
+done
 
 # Generate and install
-python3 "$SCRIPT_DIR/generate_wallpaper.py"
+uv run --with pillow python "$SCRIPT_DIR/generate_wallpaper.py" --dir "$CONTENT_DIR"

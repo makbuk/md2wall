@@ -2,14 +2,22 @@
 
 ![preview](desk-os-wallpaper.png)
 
-KDE wallpaper generator from Markdown files. Reads columns from the `content/` folder, renders a 1920×1080 PNG and sets it as wallpaper via the KDE API.
+KDE wallpaper generator from Markdown files. By default it reads columns from the `content/` folder, renders a 1920×1080 PNG and sets it as wallpaper via the KDE API. You can point it to another folder with `--dir` / `-dir`.
 
 ## Installation & usage
 
 ```bash
 git clone https://github.com/makbuk/md2wall
 cd md2wall
-bash update-wallpaper.sh
+sh update-wallpaper.sh
+```
+
+Use a different content directory when needed:
+
+```bash
+sh update-wallpaper.sh --dir=es
+# or
+sh update-wallpaper.sh -dir=es
 ```
 
 Pillow is installed automatically on the first run.
@@ -20,7 +28,7 @@ Pillow is installed automatically on the first run.
 md2wall/
 ├── generate_wallpaper.py   — main script
 ├── settings.py             — all settings
-├── update-wallpaper.sh     — run manually or via cron
+├── update-wallpaper.sh     — run manually or via cron; accepts `--dir`
 └── content/
     ├── header.md           — top bar text
     ├── footer.md           — bottom bar text
@@ -126,7 +134,7 @@ HEIGHT = 1080
 
 # Paths
 OUTPUT_PNG  = Path.home() / ".config" / "desk-os-wallpaper.png"
-CONTENT_DIR = Path(__file__).parent / "content"
+CONTENT_DIR = BASE_DIR / "content"
 
 # Columns
 MAX_COLUMNS = 5   # maximum number of columns
