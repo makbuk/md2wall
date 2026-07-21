@@ -2,36 +2,36 @@
 
 ![preview](desk-os-wallpaper.png)
 
-KDE wallpaper generator from Markdown files. By default it reads columns from the `content/` folder, renders a 1920×1080 PNG and sets it as wallpaper via the KDE API. You can point it to another folder with `--dir` / `-dir`.
+KDE wallpaper generator from Markdown files. Reads columns from `content/`, renders a 1920×1080 PNG and sets it as wallpaper via the KDE API.
 
 ## Installation & usage
 
 ```bash
 git clone https://github.com/makbuk/md2wall
 cd md2wall
-sh update-wallpaper.sh
-```
-
-Use a different content directory when needed:
-
-```bash
-sh update-wallpaper.sh --dir=es
-# or
-sh update-wallpaper.sh -dir=es
+bash update-wallpaper.sh
 ```
 
 Pillow is installed automatically on the first run.
+
+Use a different content directory:
+
+```bash
+bash update-wallpaper.sh --dir=my-content
+```
 
 ## Project structure
 
 ```
 md2wall/
 ├── generate_wallpaper.py   — main script
-├── settings.py             — all settings
-├── update-wallpaper.sh     — run manually or via cron; accepts `--dir`
+├── settings.py.example     — default settings (copy to settings.py to customize)
+├── settings.py             — personal settings, git-ignored
+├── update-wallpaper.sh     — run manually or via cron
 └── content/
     ├── header.md           — top bar text
     ├── footer.md           — bottom bar text
+    ├── images/             — images used in columns
     ├── column1.md          — column 1
     ├── column2.md          — column 2
     └── ...                 — any number of columns up to MAX_COLUMNS
@@ -51,28 +51,35 @@ title: Tasks
 
 ## Heading
 
+---
+
 - list item
-- another item
+- **bold** item
 
 > blockquote
 
 ### Subheading
 
-Plain text, **bold text**
+Plain text
 
-    code block
+*Italic text spanning
+multiple lines*
+
+```code block```
+
+![32x32](images/icon.png) label
 
 <!-- /column:1 -->
 ```
 
-- `title:` — column header shown in the column's top bar
+- `title:` — column header shown in the column's accent bar; taken from frontmatter
 - The frontmatter block (`---...---`) and HTML comments (`<!-- -->`) are stripped before rendering
+- `---` inside a column draws a horizontal rule at that position
+- `*...*` spanning multiple lines renders as italic text
 
 ## Images
 
-Place image files in `content/images/` and reference them in any column using Markdown image syntax.
-
-The alt text controls the display size and shape:
+Place files in `content/images/` and reference them in any column:
 
 ```markdown
 ![](images/logo.png)               — original size
@@ -82,59 +89,48 @@ The alt text controls the display size and shape:
 ![48c](images/avatar.png) KDE      — circle with a text label
 ```
 
-### Size formats
-
-| Format | Shape | Example |
+| Alt text | Shape | Description |
 |---|---|---|
-| _(none)_ | original size | `![](...)`  |
-| `WxH` | rectangle | `![32x32](...)` |
-| `Nc` | circle, N = diameter in px | `![48c](...)` |
+| _(empty)_ | original | no resizing |
+| `WxH` | rectangle | scaled to W×H pixels |
+| `Nc` | circle | cropped to circle of diameter N px (`c` = circle) |
 
-The circle shape crops the image to fit inside a circle of the given diameter — useful for avatars and round icons. The `c` stands for **c**ircle.
-
-Text after the closing `)` is rendered to the right of the image, vertically centered.
-
-PNG transparency is composited correctly. Supported formats: PNG, JPG, and any format supported by Pillow.
+Text after `)` is rendered to the right of the image, vertically centered. PNG transparency is composited correctly.
 
 ## Header & footer
 
-`content/header.md` and `content/footer.md` are plain text files rendered as-is.
+`content/header.md` and `content/footer.md` are plain text rendered as-is in the top and bottom bars.
 
-Individual words and characters can be colored using `[text](color)` syntax:
+Color individual words or characters with `[text](color)` syntax:
 
 ```
-[DESK·OS](green) │ [~/md2wall/content/](muted)
+[DESK·OS](green) │ [~/wallpaper/content/](muted)
 ```
 
-### Named colors
+### Colors
 
 | Name | Description |
 |---|---|
-| `green` | accent green (column 1) |
-| `cyan` | accent cyan (column 2) |
-| `red` | accent red (column 3) |
-| `yellow` | accent yellow (column 4) |
-| `purple` | accent purple (column 5) |
+| `green` `cyan` `red` `yellow` `purple` | accent colors (match column order) |
 | `bright` | bright white |
 | `main` | default text |
 | `muted` | muted gray |
 | `dim` | dark gray |
 | `#rrggbb` | any hex color |
 
-Text without markup uses the default color (header — `green`, footer — `muted`).
+Text without markup uses the default color (header → `green`, footer → `muted`).
 
 ## Settings
 
-Settings are loaded from `settings.py` if it exists, otherwise from `settings.py.example`.
-To customize: copy the example file and edit your copy.
+Copy the example file to create your personal settings:
 
 ```bash
 cp settings.py.example settings.py
 ```
 
-`settings.py` is git-ignored so your personal settings are never committed.
+The script loads `settings.py` if it exists, otherwise falls back to `settings.py.example`. `settings.py` is git-ignored so personal settings are never committed.
 
-All available options:
+### All options
 
 ```python
 # Resolution
@@ -146,19 +142,26 @@ OUTPUT_PNG  = Path.home() / ".config" / "desk-os-wallpaper.png"
 CONTENT_DIR = BASE_DIR / "content"
 
 # Columns
-MAX_COLUMNS = 5   # maximum number of columns
+MAX_COLUMNS = 5        # maximum number of columns rendered
 
 # Layout
-TOPBAR_H    = 36  # top bar height (px)
-FOOTER_H    = 26  # bottom bar height (px)
-COL_PADDING = 22  # inner column padding (px)
+TOPBAR_H    = 36       # top bar height (px)
+FOOTER_H    = 26       # bottom bar height (px)
+COL_PADDING = 22       # inner column padding (px)
 
 # Font sizes
 FONT_SIZE_NORMAL = 12
 FONT_SIZE_SMALL  = 11
 FONT_SIZE_TINY   = 10
 
-# Colors (RGB)
+# Font paths — set to None for auto-detection
+# Auto-detection order: JetBrains Mono → DejaVu → Liberation → Ubuntu Mono
+FONT_REGULAR     = None  # e.g. "/usr/share/fonts/truetype/fira/FiraCode-Regular.ttf"
+FONT_BOLD        = None
+FONT_ITALIC      = None
+FONT_BOLD_ITALIC = None
+
+# Colors (RGB tuples)
 BG          = (8, 8, 8)
 COL_COLORS  = [(0,255,136), (0,207,255), (255,107,107), (255,204,0), (200,130,255)]
 TEXT_BRIGHT = (238, 238, 238)
@@ -168,7 +171,7 @@ TEXT_DIM    = (51, 51, 51)
 BORDER      = (26, 26, 26)
 ```
 
-`COL_COLORS` — accent colors assigned to columns in order (green, cyan, red, yellow, purple).
+`COL_COLORS` — accent colors assigned to columns in order: green, cyan, red, yellow, purple.
 
 ## Auto-update via cron
 
@@ -182,15 +185,15 @@ Add a line to refresh every 10 minutes:
 */10 * * * * bash /path/to/update-wallpaper.sh
 ```
 
-Cron runs without access to the graphical environment (`$DISPLAY`, `$DBUS_SESSION_BUS_ADDRESS`). The `update-wallpaper.sh` script exports these variables automatically, so no extra cron configuration is needed.
+`update-wallpaper.sh` exports `$DISPLAY` and `$DBUS_SESSION_BUS_ADDRESS` automatically so it works under cron without extra configuration.
 
-If the wallpaper is not being set, check that the UID in `DBUS_SESSION_BUS_ADDRESS` matches your user. The default is `1000` (the first user on Ubuntu). To verify:
+If the wallpaper is not updating, verify your user UID matches the value in `update-wallpaper.sh`:
 
 ```bash
-id -u
+id -u   # default is 1000 on Ubuntu
 ```
 
-If the output differs from `1000`, update the path in `update-wallpaper.sh`:
+If different, update the line in `update-wallpaper.sh`:
 
 ```bash
 export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/YOUR_UID/bus
@@ -201,4 +204,4 @@ export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/YOUR_UID/bus
 - Python 3.8+
 - KDE Plasma (Kubuntu 22.04+)
 - Pillow (installed automatically)
-- JetBrains Mono font (optional — falls back to DejaVu / Liberation / Ubuntu Mono)
+- JetBrains Mono (optional — falls back to DejaVu / Liberation / Ubuntu Mono)
