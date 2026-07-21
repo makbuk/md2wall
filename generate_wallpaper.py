@@ -59,6 +59,8 @@ FONT_BOLD        = _cfg.FONT_BOLD
 FONT_ITALIC      = _cfg.FONT_ITALIC
 FONT_BOLD_ITALIC = _cfg.FONT_BOLD_ITALIC
 BG               = _cfg.BG
+BG_TOPBAR        = _cfg.BG_TOPBAR
+BG_FOOTER        = _cfg.BG_FOOTER
 COL_COLORS       = _cfg.COL_COLORS
 TEXT_BRIGHT      = _cfg.TEXT_BRIGHT
 TEXT_MAIN        = _cfg.TEXT_MAIN
@@ -421,9 +423,12 @@ def render_column(img, draw, md_text, x, y, w, h, col_index, col_title,
 
         elif kind == 'bq':
             draw.rectangle([cx, cy, cx+3, cy+16], fill=COL_COLORS[2])
-            clean = strip_inline(text)
-            draw.text((cx+10, cy), clean, font=font_n, fill=TEXT_MUTED)
-            cy += 20
+            if re.search(r'\[.*?\]\([^)]*\)', text, re.DOTALL):
+                new_cy = draw_colored_text(draw, cx+10, cy, text, font_n, TEXT_MUTED)
+                cy = new_cy + 20
+            else:
+                draw.text((cx+10, cy), strip_inline(text), font=font_n, fill=TEXT_MUTED)
+                cy += 20
 
         elif kind == 'p':
             # Detect start/end of a multi-line italic block (* ... *)
@@ -440,6 +445,11 @@ def render_column(img, draw, md_text, x, y, w, h, col_index, col_title,
             elif not in_italic and stripped.startswith('*') and stripped.endswith('*') and len(stripped) > 1:
                 render_italic = True
                 text = stripped[1:-1]
+            # Use draw_colored_text when [text](color) spans are present
+            if not render_italic and re.search(r'\[.*?\]\([^)]*\)', text, re.DOTALL):
+                new_cy = draw_colored_text(draw, cx, cy, text, font_n, TEXT_MAIN)
+                cy = new_cy + 20
+                continue
             clean   = strip_inline(text)
             wrapped = textwrap.wrap(clean, width=max_w//7)
             for wline in wrapped:
@@ -466,7 +476,7 @@ def render(content_md, col_titles, header_text, footer_text):
     fss = find_font(FONT_SIZE_TINY)
 
     # ── TOPBAR — raw text from header.md ──
-    draw.rectangle([0, 0, WIDTH, TOPBAR_H], fill=(12,12,12))
+    draw.rectangle([0, 0, WIDTH, TOPBAR_H], fill=BG_TOPBAR)
     draw.line([0, TOPBAR_H, WIDTH, TOPBAR_H], fill=BORDER, width=1)
     draw_colored_text(draw, 14, 11, header_text, fb, COL_COLORS[0])
 
@@ -487,7 +497,7 @@ def render(content_md, col_titles, header_text, footer_text):
 
     # ── FOOTER — raw text from footer.md ──
     fy = HEIGHT - FOOTER_H
-    draw.rectangle([0, fy, WIDTH, HEIGHT], fill=(12,12,12))
+    draw.rectangle([0, fy, WIDTH, HEIGHT], fill=BG_FOOTER)
     draw.line([0, fy, WIDTH, fy], fill=BORDER, width=1)
     draw_colored_text(draw, 14, fy+7, footer_text, fss, TEXT_MUTED)
 

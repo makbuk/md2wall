@@ -163,6 +163,8 @@ FONT_BOLD_ITALIC = None
 
 # Colors (RGB tuples)
 BG          = (8, 8, 8)
+BG_TOPBAR   = (12, 12, 12)   # top bar background
+BG_FOOTER   = (12, 12, 12)   # bottom bar background
 COL_COLORS  = [(0,255,136), (0,207,255), (255,107,107), (255,204,0), (200,130,255)]
 TEXT_BRIGHT = (238, 238, 238)
 TEXT_MAIN   = (187, 187, 187)
