@@ -30,6 +30,7 @@ from settings import (
     MAX_COLUMNS,
     TOPBAR_H, FOOTER_H, COL_PADDING,
     FONT_SIZE_NORMAL, FONT_SIZE_SMALL, FONT_SIZE_TINY,
+    FONT_REGULAR, FONT_BOLD, FONT_ITALIC, FONT_BOLD_ITALIC,
     BG, COL_COLORS, TEXT_BRIGHT, TEXT_MAIN, TEXT_MUTED, TEXT_DIM, BORDER,
 )
 
@@ -46,36 +47,47 @@ CONTENT_DIR = content_dir
 #  FONTS — look for JetBrains Mono or fallback
 # ══════════════════════════════════════════════
 def find_font(size, bold=False, italic=False):
+    # Use explicit path from settings if provided
+    explicit = {
+        (False, False): FONT_REGULAR,
+        (True,  False): FONT_BOLD,
+        (False, True):  FONT_ITALIC,
+        (True,  True):  FONT_BOLD_ITALIC,
+    }.get((bold, italic))
+    if explicit and os.path.exists(explicit):
+        return ImageFont.truetype(explicit, size)
+
+    # Auto-detection fallback: JetBrains Mono → DejaVu → Liberation → Ubuntu Mono
+    home = Path.home()
     if bold and italic:
         candidates = [
-            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-BoldItalic.ttf",
-            f"{Path.home()}/.local/share/fonts/JetBrainsMono-BoldItalic.ttf",
+            "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-BoldItalic.ttf",
+            f"{home}/.local/share/fonts/JetBrainsMono-BoldItalic.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-BoldOblique.ttf",
             "/usr/share/fonts/truetype/liberation/LiberationMono-BoldItalic.ttf",
             "/usr/share/fonts/truetype/ubuntu/UbuntuMono-BI.ttf",
         ]
     elif italic:
         candidates = [
-            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Italic.ttf",
-            f"{Path.home()}/.local/share/fonts/JetBrainsMono-Italic.ttf",
+            "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Italic.ttf",
+            f"{home}/.local/share/fonts/JetBrainsMono-Italic.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Oblique.ttf",
             "/usr/share/fonts/truetype/liberation/LiberationMono-Italic.ttf",
             "/usr/share/fonts/truetype/ubuntu/UbuntuMono-RI.ttf",
         ]
     elif bold:
         candidates = [
-            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Bold.ttf",
-            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Bold.ttf",
-            f"{Path.home()}/.local/share/fonts/JetBrainsMono-Bold.ttf",
+            "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Bold.ttf",
+            f"{home}/.local/share/fonts/JetBrainsMono-Bold.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
             "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
             "/usr/share/fonts/truetype/ubuntu/UbuntuMono-B.ttf",
         ]
     else:
         candidates = [
-            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Regular.ttf",
-            f"/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono.ttf",
-            f"{Path.home()}/.local/share/fonts/JetBrainsMono-Regular.ttf",
+            "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Regular.ttf",
+            "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono.ttf",
+            f"{home}/.local/share/fonts/JetBrainsMono-Regular.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
             "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
             "/usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf",

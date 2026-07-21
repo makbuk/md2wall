@@ -23,6 +23,13 @@ FONT_SIZE_NORMAL = 12
 FONT_SIZE_SMALL  = 11
 FONT_SIZE_TINY   = 10
 
+# Explicit font file paths — set to None to use auto-detection
+# Auto-detection order: JetBrains Mono → DejaVu → Liberation → Ubuntu Mono
+FONT_REGULAR     = None  # e.g. "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Regular.ttf"
+FONT_BOLD        = None  # e.g. "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Bold.ttf"
+FONT_ITALIC      = None  # e.g. "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Italic.ttf"
+FONT_BOLD_ITALIC = None  # e.g. "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-BoldItalic.ttf"
+
 # ── Colors ──────────────────────────────────────
 BG          = (8, 8, 8)
 COL_COLORS  = [(0,255,136), (0,207,255), (255,107,107), (255,204,0), (200,130,255)]
