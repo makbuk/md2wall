@@ -125,7 +125,16 @@ Text without markup uses the default color (header — `green`, footer — `mute
 
 ## Settings
 
-All settings are in `settings.py`:
+Settings are loaded from `settings.py` if it exists, otherwise from `settings.py.example`.
+To customize: copy the example file and edit your copy.
+
+```bash
+cp settings.py.example settings.py
+```
+
+`settings.py` is git-ignored so your personal settings are never committed.
+
+All available options:
 
 ```python
 # Resolution

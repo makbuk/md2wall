@@ -25,14 +25,46 @@ parser.add_argument("-dir", "--dir", dest="content_dir", default=None,
                     help="Content directory to use (default: content)")
 args = parser.parse_args()
 
-from settings import (
-    WIDTH, HEIGHT, OUTPUT_PNG, CONTENT_DIR,
-    MAX_COLUMNS,
-    TOPBAR_H, FOOTER_H, COL_PADDING,
-    FONT_SIZE_NORMAL, FONT_SIZE_SMALL, FONT_SIZE_TINY,
-    FONT_REGULAR, FONT_BOLD, FONT_ITALIC, FONT_BOLD_ITALIC,
-    BG, COL_COLORS, TEXT_BRIGHT, TEXT_MAIN, TEXT_MUTED, TEXT_DIM, BORDER,
-)
+import importlib.util
+
+def _load_settings():
+    """Load settings.py if it exists, otherwise fall back to settings.py.example"""
+    base = Path(__file__).parent
+    for filename in ("settings.py", "settings.py.example"):
+        path = base / filename
+        if path.exists():
+            spec = importlib.util.spec_from_file_location("settings", path)
+            mod  = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            return mod
+    raise FileNotFoundError(
+        "No settings file found. Create settings.py or keep settings.py.example."
+    )
+
+_cfg = _load_settings()
+
+WIDTH            = _cfg.WIDTH
+HEIGHT           = _cfg.HEIGHT
+OUTPUT_PNG       = _cfg.OUTPUT_PNG
+CONTENT_DIR      = _cfg.CONTENT_DIR
+MAX_COLUMNS      = _cfg.MAX_COLUMNS
+TOPBAR_H         = _cfg.TOPBAR_H
+FOOTER_H         = _cfg.FOOTER_H
+COL_PADDING      = _cfg.COL_PADDING
+FONT_SIZE_NORMAL = _cfg.FONT_SIZE_NORMAL
+FONT_SIZE_SMALL  = _cfg.FONT_SIZE_SMALL
+FONT_SIZE_TINY   = _cfg.FONT_SIZE_TINY
+FONT_REGULAR     = _cfg.FONT_REGULAR
+FONT_BOLD        = _cfg.FONT_BOLD
+FONT_ITALIC      = _cfg.FONT_ITALIC
+FONT_BOLD_ITALIC = _cfg.FONT_BOLD_ITALIC
+BG               = _cfg.BG
+COL_COLORS       = _cfg.COL_COLORS
+TEXT_BRIGHT      = _cfg.TEXT_BRIGHT
+TEXT_MAIN        = _cfg.TEXT_MAIN
+TEXT_MUTED       = _cfg.TEXT_MUTED
+TEXT_DIM         = _cfg.TEXT_DIM
+BORDER           = _cfg.BORDER
 
 if args.content_dir:
     content_dir = Path(args.content_dir)
