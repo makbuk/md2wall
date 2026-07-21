@@ -198,23 +198,49 @@ def _parse_color(color_str):
         return tuple(int(c[i:i+2], 16) for i in (1, 3, 5))
     return None
 
-def draw_colored_text(draw, x, y, text, font, default_color, max_right=None):
+def draw_colored_text(draw, x, y, text, font, default_color, max_right=None, line_height=18):
     """Draw text with inline [word](color) spans; unstyled text uses default_color.
-    If max_right is set, stops drawing at that x coordinate."""
-    segments = re.split(r'(\[.*?\]\([^)]*\))', text)
+    Supports \\n inside spans for forced line breaks. Returns new y position."""
+    segments = re.split(r'(\[.*?\]\([^)]*\))', text, flags=re.DOTALL)
     cx = x
+    cy = y
     for seg in segments:
-        m = re.fullmatch(r'\[([^\]]*)\]\(([^)]*)\)', seg)
+        m = re.fullmatch(r'\[([^\]]*)\]\(([^)]*)\)', seg, flags=re.DOTALL)
         if m:
             label, color_str = m.group(1), m.group(2)
             color = _parse_color(color_str) or default_color
         else:
             label, color = seg, default_color
         if label:
-            if max_right is not None and cx >= max_right:
-                break
-            draw.text((cx, y), label, font=font, fill=color)
-            cx += font.getbbox(label)[2]
+            for i, part in enumerate(label.split('\n')):
+                if i > 0:
+                    cy += line_height
+                    cx = x          # reset to line start after forced break
+                if part:
+                    if max_right is not None and cx >= max_right:
+                        break
+                    draw.text((cx, cy), part, font=font, fill=color)
+                    cx += font.getbbox(part)[2]
+    return cy
+
+def join_continuation_lines(lines):
+    """Join lines where [ is opened but not closed, keeping \\n as a forced break marker"""
+    result = []
+    buf = None
+    for line in lines:
+        if buf is not None:
+            buf += '\n' + line
+            if buf.count('[') <= buf.count(']'):
+                result.append(buf)
+                buf = None
+        else:
+            if line.count('[') > line.count(']'):
+                buf = line
+            else:
+                result.append(line)
+    if buf is not None:
+        result.append(buf)
+    return result
 
 # ══════════════════════════════════════════════
 #  COLUMN FILE READER
@@ -279,8 +305,8 @@ def render_column(img, draw, md_text, x, y, w, h, col_index, col_title,
     draw.line([x, cy, x+w, cy], fill=BORDER, width=1)
     cy += 12
 
-    # Parse and draw each line
-    lines     = md_text.strip().split('\n')
+    # Parse and draw each line (join continuation lines first)
+    lines     = join_continuation_lines(md_text.strip().split('\n'))
     in_code   = False
     in_italic = False
     code_buf  = []
@@ -359,39 +385,36 @@ def render_column(img, draw, md_text, x, y, w, h, col_index, col_title,
         elif kind == 'li':
             prefix = '›  '
             draw.text((cx, cy), prefix, font=font_n, fill=TEXT_DIM)
-            fw = font_n.getbbox(prefix)[2]
+            fw        = font_n.getbbox(prefix)[2]
             max_right = x + w - COL_PADDING
-            indent = cx + fw
-            if re.search(r'\[.*?\]\([^)]*\)', text):
-                # Split into command span and description (after " — ")
-                m_sep = re.search(r'^(\[.*?\]\([^)]*\))(.*)', text)
+            indent    = cx + fw
+            if re.search(r'\[.*?\]\([^)]*\)', text, re.DOTALL):
+                m_sep = re.search(r'^(\[.*?\]\([^)]*\))(.*)', text, re.DOTALL)
                 if m_sep and ' — ' in m_sep.group(2):
                     cmd_span = m_sep.group(1)
-                    rest     = m_sep.group(2)  # starts with " — description"
-                    draw_colored_text(draw, indent, cy, cmd_span, font_n, TEXT_MAIN, max_right=max_right)
-                    cmd_w = font_n.getbbox(re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', cmd_span))[2]
-                    # Draw description on same line if fits, else wrap to next line
-                    desc_x = indent + cmd_w
-                    desc_text = rest
-                    desc_w = font_n.getbbox(desc_text)[2]
+                    rest     = m_sep.group(2)
+                    new_cy   = draw_colored_text(draw, indent, cy, cmd_span, font_n, TEXT_MAIN, max_right=max_right)
+                    # Description goes after the last rendered line of the command
+                    last_line_plain = re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', cmd_span).split('\n')[-1]
+                    desc_x = indent + font_n.getbbox(last_line_plain)[2]
+                    desc_w = font_n.getbbox(rest)[2]
                     if desc_x + desc_w <= max_right:
-                        draw.text((desc_x, cy), desc_text, font=font_n, fill=TEXT_MAIN)
-                        cy += 19
+                        # Description fits on the same line as the last line of the command
+                        draw.text((desc_x, new_cy), rest, font=font_n, fill=TEXT_MAIN)
+                        cy = new_cy + 19
                     else:
-                        cy += 19
+                        cy = new_cy + 19
                         desc_clean = rest.lstrip(' —').lstrip()
-                        wrapped = textwrap.wrap(f"— {desc_clean}", width=(max_right - indent) // 7)
-                        for wline in wrapped:
+                        for wline in textwrap.wrap(f"— {desc_clean}", width=(max_right - indent) // 7):
                             draw.text((indent + 4, cy), wline, font=font_n, fill=TEXT_MAIN)
                             cy += 17
                 else:
-                    draw_colored_text(draw, indent, cy, text, font_n, TEXT_MAIN, max_right=max_right)
-                    cy += 19
+                    new_cy = draw_colored_text(draw, indent, cy, text, font_n, TEXT_MAIN, max_right=max_right)
+                    cy = new_cy + 19
             else:
                 clean = strip_inline(text)
                 clr   = TEXT_BRIGHT if is_bold_segment(text) else TEXT_MAIN
-                wrapped = textwrap.wrap(clean, width=(max_right - indent) // 7)
-                for i, wline in enumerate(wrapped):
+                for i, wline in enumerate(textwrap.wrap(clean, width=(max_right - indent) // 7)):
                     draw.text((indent if i == 0 else indent + 4, cy), wline, font=font_n, fill=clr)
                     cy += 17
                 cy += 2
